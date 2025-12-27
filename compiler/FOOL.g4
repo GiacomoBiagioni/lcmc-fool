@@ -19,21 +19,27 @@ dec : VAR ID COLON type ASS exp SEMIC  #vardec
         	(LET dec+ IN)? exp SEMIC   #fundec
     ;
            
-exp     : exp TIMES exp #times
-        | exp PLUS  exp #plus
-        | exp EQ  exp   #eq 
+exp     : exp (TIMES | DIV) exp #timesDiv
+        | exp (PLUS | MINUS)  exp #plusMinus
+        | exp (EQ | GE | LE)  exp   #comp
+        | exp (AND | OR) exp #andOr
+        | NOT exp #not
         | LPAR exp RPAR #pars
     	| MINUS? NUM #integer
 	    | TRUE #true     
 	    | FALSE #false
+	    // | NULL #null
+	    // | NEW ID LPAR (exp (COMMA exp)* )? RPAR #new
 	    | IF exp THEN CLPAR exp CRPAR ELSE CLPAR exp CRPAR  #if   
 	    | PRINT LPAR exp RPAR #print
 	    | ID #id
 	    | ID LPAR (exp (COMMA exp)* )? RPAR #call
+	    // | ID DOT ID LPAR (exp (COMMA exp)* )? RPAR #dotCall
         ; 
              
 type    : INT #intType
         | BOOL #boolType
+        | ID #idType
  	    ;  
  	  		  
 /*------------------------------------------------------------------
@@ -43,6 +49,7 @@ type    : INT #intType
 PLUS  	: '+' ;
 MINUS	: '-' ; 
 TIMES   : '*' ;
+DIV     : '/' ;
 LPAR	: '(' ;
 RPAR	: ')' ;
 CLPAR	: '{' ;
@@ -50,7 +57,12 @@ CRPAR	: '}' ;
 SEMIC 	: ';' ;
 COLON   : ':' ; 
 COMMA	: ',' ;
-EQ	    : '==' ;	
+EQ	    : '==' ;
+LE      : '<=' ;
+GE      : '>=' ;
+OR	    : '||';
+AND	    : '&&';
+NOT	    : '!' ;
 ASS	    : '=' ;
 TRUE	: 'true' ;
 FALSE	: 'false' ;
