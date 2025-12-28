@@ -148,6 +148,63 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 
 	@Override
+	public String visitNode(NotNode n) throws VoidException {
+		if (print) printNode(n);
+		String l1 = freshLabel();
+		String l2 = freshLabel();
+		return nlJoin(
+			visit(n.exp),
+			"push 0",
+			"beq " + l1,     // Se il valore era 0, salta a l1 (diventerà 1)
+			"push 0",        // Altrimenti (era 1), metti 0
+			"b " + l2,
+			l1 + ":",
+			"push 1",        // Se era 0, metti 1
+			l2 + ":"
+		);
+	}
+
+	@Override
+	public String visitNode(OrNode n) throws VoidException {
+		if (print) printNode(n);
+		String l1 = freshLabel();
+		String l2 = freshLabel();
+		return nlJoin(
+			visit(n.left),
+			"push 1",
+			"beq " + l1,      // Se il primo operando è 1, salta a True (short-circuit)
+			visit(n.right),
+			"push 1",
+			"beq " + l1,      // Se il secondo operando è 1, salta a True
+			"push 0",         // Entrambi sono 0
+			"b " + l2,        // Salta alla fine
+			l1 + ":",
+			"push 1",         // Risultato True
+			l2 + ":"
+		);
+	}
+
+	@Override
+	public String visitNode(AndNode n) throws VoidException {
+		if (print) printNode(n);
+		String l1 = freshLabel();
+		String l2 = freshLabel();
+		return nlJoin(
+			visit(n.left),
+			"push 0",
+			"beq " + l1,      // Se il primo operando è 0, salta a False
+			visit(n.right),
+			"push 0",
+			"beq " + l1,      // Se il secondo operando è 0, salta a False
+			"push 1",         // Entrambi sono 1
+			"b " + l2,        // Salta alla fine
+			l1 + ":",
+			"push 0",         // Risultato False
+			l2 + ":"
+		);
+	}
+
+	@Override
 	public String visitNode(TimesNode n) {
 		if (print) printNode(n);
 		return nlJoin(

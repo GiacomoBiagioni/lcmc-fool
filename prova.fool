@@ -1,5 +1,5 @@
 print (
-    if (6 / 6 == 2)
+    if (6 / 6 == 2 && 5 == 5)
         then { true }
         else { false }
 );
