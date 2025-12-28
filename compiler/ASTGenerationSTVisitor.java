@@ -45,13 +45,130 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return visit(c.progbody());
 	}
 
+
 	@Override
 	public Node visitLetInProg(LetInProgContext c) {
 		if (print) printVarAndProdName(c);
 		List<DecNode> declist = new ArrayList<>();
-		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
+
+		// Visita le classi (se ce ne sono)
+		for (CldecContext dec : c.cldec()) {
+			declist.add((DecNode) visit(dec));
+		}
+
+		// Visita le dichiarazioni standard (var/fun)
+		for (DecContext dec : c.dec()){
+			declist.add((DecNode) visit(dec));
+		}
 		return new ProgLetInNode(declist, visit(c.exp()));
 	}
+
+	@Override
+	public Node visitCldec(CldecContext c) {
+		if (print) printVarAndProdName(c);
+
+		// Recupera il nome della classe
+		String classId = c.ID(0).getText();
+
+		/*
+		// Recupera la superclasse (se c'è "extends")
+		String superId = null;
+		int fieldStartIndex = 1; // Di base i campi iniziano dall'ID all'indice 1
+
+		if (c.EXTENDS() != null) {
+			superId = c.ID(1).getText();
+			fieldStartIndex = 2; // Se c'è extends, i campi iniziano dall'ID all'indice 2
+		}*/
+
+		int fieldStartIndex = 1;
+
+		// Recupera i Campi (Fields) - Trattati come ParNode o FieldNode
+		List<FieldNode> fields = new ArrayList<>();
+
+		// I campi sono pari al numero totale di ID meno quelli usati per nome classe e super
+		int numFields = c.ID().size() - fieldStartIndex;
+
+		for (int i = 0; i < numFields; i++) {
+			String fieldName = c.ID(fieldStartIndex + i).getText();
+			TypeNode fieldType = (TypeNode) visit(c.type(i));
+
+			FieldNode f = new FieldNode(fieldName, fieldType);
+			f.setLine(c.ID(fieldStartIndex + i).getSymbol().getLine());
+			fields.add(f);
+		}
+
+		// Recupera i Metodi
+		List<MethodNode> methods = new ArrayList<>();
+		for (MethdecContext mc : c.methdec()) {
+			methods.add((MethodNode) visit(mc));
+		}
+
+		Node n = new ClassNode(classId, fields, methods);
+		n.setLine(c.CLASS().getSymbol().getLine());
+		return n;
+	}
+
+	@Override
+	public Node visitMethdec(MethdecContext c) {
+		if (print) printVarAndProdName(c);
+
+		List<ParNode> parList = new ArrayList<>();
+		for (int i = 1; i < c.ID().size(); i++) {
+			ParNode p = new ParNode(c.ID(i).getText(), (TypeNode) visit(c.type(i)));
+			p.setLine(c.ID(i).getSymbol().getLine());
+			parList.add(p);
+		}
+
+		List<DecNode> decList = new ArrayList<>();
+		for (DecContext dec : c.dec()) decList.add((DecNode) visit(dec));
+
+		Node n = new MethodNode(c.ID(0).getText(), (TypeNode) visit(c.type(0)), parList, decList, visit(c.exp()));
+		n.setLine(c.FUN().getSymbol().getLine());
+		return n;
+	}
+
+	@Override
+	public Node visitNew(NewContext c) {
+		if (print) printVarAndProdName(c);
+
+		List<Node> args = new ArrayList<>();
+		for (ExpContext e : c.exp()) {
+			args.add(visit(e));
+		}
+
+		Node n = new NewNode(c.ID().getText(), args);
+		n.setLine(c.NEW().getSymbol().getLine());
+		return n;
+	}
+
+	@Override
+	public Node visitDotCall(DotCallContext c) {
+		if (print) printVarAndProdName(c);
+
+		List<Node> args = new ArrayList<>();
+		for (ExpContext e : c.exp()) {
+			args.add(visit(e));
+		}
+
+		// ID(0) è l'oggetto, ID(1) è il metodo
+		Node n = new ClassCallNode(c.ID(0).getText(), c.ID(1).getText(), args);
+		n.setLine(c.ID(0).getSymbol().getLine());
+		return n;
+	}
+
+	@Override
+	public Node visitNull(NullContext c) {
+		if (print) printVarAndProdName(c);
+		return new EmptyNode(); // Rappresenta 'null'
+	}
+
+	@Override
+	public Node visitIdType(IdTypeContext c) {
+		if (print) printVarAndProdName(c);
+		// Quando trovo un ID come tipo (es: "Cane"), creo un RefTypeNode
+		return new RefTypeNode(c.ID().getText());
+	}
+
 
 	@Override
 	public Node visitNoDecProg(NoDecProgContext c) {

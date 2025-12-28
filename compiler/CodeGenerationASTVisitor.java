@@ -14,13 +14,27 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	public String visitNode(ProgLetInNode n) {
 		if (print) printNode(n);
 		String declCode = null;
-		for (Node dec : n.declist) declCode=nlJoin(declCode,visit(dec));
+
+		// 1. Prima generiamo codice per le Classi (VTable creation)
+		for (Node dec : n.declist) {
+			if (dec instanceof ClassNode) {
+				declCode = nlJoin(declCode, visit(dec));
+			}
+		}
+
+		// 2. Poi generiamo codice per le altre dichiarazioni (Var/Fun)
+		for (Node dec : n.declist) {
+			if (!(dec instanceof ClassNode)) {
+				declCode = nlJoin(declCode, visit(dec));
+			}
+		}
+
 		return nlJoin(
-			"push 0",	
-			declCode, // generate code for declarations (allocation)			
-			visit(n.exp),
-			"halt",
-			getCode()
+				"push 0",
+				declCode, // generate code for declarations (allocation)
+				visit(n.exp),
+				"halt",
+				getCode()
 		);
 	}
 
@@ -287,5 +301,127 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	public String visitNode(IntNode n) {
 		if (print) printNode(n,n.val.toString());
 		return "push "+n.val;
+	}
+
+	@Override
+	public String visitNode(ClassNode n) {
+		if (print) printNode(n, n.id);
+		String fillDispatchTable = "";
+
+		// Genera il codice per riempire la Dispatch Table nello Heap
+		for (MethodNode method : n.methods) {
+			visit(method); // Genera il codice del corpo del metodo
+			fillDispatchTable = nlJoin(fillDispatchTable,
+					"push " + method.label, "lhp", "sw", "lhp", "push 1", "add", "shp"
+			);
+		}
+
+		return nlJoin(
+				"lhp",              // 1. Carica indirizzo inizio DT (questo valore RIMANE sullo stack come "variabile classe")
+				fillDispatchTable   // 2. Riempie la tabella nello heap (senza consumare il valore al punto 1)
+
+				// RIMOSSO: "sw" e "pop". Non dobbiamo toglierlo dallo stack!
+				// Il valore lasciato da "lhp" è esattamente ciò che new Cane() si aspetta di trovare all'offset della classe.
+		);
+	}
+
+	@Override
+	public String visitNode(MethodNode n) {
+		if (print) printNode(n, n.id);
+		String declCode = null, popDecl = null, popParl = null;
+
+		// Genera etichetta univoca e salvala nel nodo
+		n.label = freshFunLabel();
+
+		for (Node dec : n.declist) {
+			declCode = nlJoin(declCode, visit(dec));
+			popDecl = nlJoin(popDecl, "pop");
+		}
+		for (int i=0; i<n.parlist.size(); i++) popParl = nlJoin(popParl, "pop");
+
+		// Inserisce il codice della funzione separatamente
+		putCode(
+				nlJoin(
+						n.label + ":",
+						"cfp",
+						"lra",
+						declCode,
+						visit(n.exp),
+						"stm",
+						popDecl,
+						"sra",
+						"pop",
+						popParl,
+						"sfp",
+						"ltm",
+						"lra",
+						"js"
+				)
+		);
+		return null;
+	}
+
+	@Override
+	public String visitNode(NewNode n) {
+		if (print) printNode(n, n.id);
+		String argCode = null;
+
+		// 1. Valuta argomenti in ordine INVERSO (per prepararli al salvataggio sequenziale nello Heap)
+		for (int i = n.arglist.size() - 1; i >= 0; i--) {
+			argCode = nlJoin(argCode, visit(n.arglist.get(i)));
+		}
+
+		// 2. Codice per spostare elementi dallo Stack allo Heap
+		String storeSequence = null;
+		// n.arglist.size() + 1 iterazioni (Argomenti + Dispatch Table Pointer)
+		for (int i = 0; i <= n.arglist.size(); i++) {
+			storeSequence = nlJoin(storeSequence,
+					"lhp", "sw", "lhp", "push 1", "add", "shp"
+			);
+		}
+
+		return nlJoin(
+				argCode,                                       // Stack: [ArgN... Arg1]
+				"push " + n.entry.offset, "lfp", "add", "lw",  // Stack: [ArgN... Arg1, DT_Ptr] (DT in cima)
+				"lhp",                                         // Carica indirizzo oggetto (sarà il return value)
+				"stm",                                         // Salvalo in $tm temporaneamente
+				storeSequence,                                 // Scrive tutto nello heap (svuota stack)
+				"ltm"                                          // Recupera indirizzo oggetto da $tm
+		);
+	}
+
+	@Override
+	public String visitNode(ClassCallNode n) {
+		if (print) printNode(n, n.objId + "." + n.methodId);
+
+		String argCode = null, getAR = null;
+		// Valuta argomenti in ordine inverso
+		for (int i = n.arglist.size() - 1; i >= 0; i--) {
+			argCode = nlJoin(argCode, visit(n.arglist.get(i)));
+		}
+
+		// Recupera l'indirizzo dove è salvato l'oggetto (seguendo la catena statica)
+		for (int i = 0; i < n.nl - n.entry.nl; i++) getAR = nlJoin(getAR, "lw");
+
+		return nlJoin(
+				"lfp", // 1. Push Control Link (chiamante)
+				argCode, // 2. Push Argomenti
+
+				// 3. Recupera Object Pointer
+				"lfp", getAR, "push " + n.entry.offset, "add", "lw",
+
+				"stm", // Salva ObjPtr in TM (diventa l'Access Link del metodo chiamato)
+				"ltm", // Duplica ObjPtr per dereferenziarlo
+				"lw",  // Dereferenzia ObjPtr -> Ottieni indirizzo Dispatch Table
+				"push " + n.methodEntry.offset, "add", // Somma offset del metodo
+				"lw",  // Carica indirizzo del codice del metodo dalla DT
+				"js"   // Salta al metodo
+		);
+	}
+
+	@Override
+	public String visitNode(EmptyNode n) {
+		if (print) printNode(n);
+		return "push -1"; // Valore per null
 	}
 }

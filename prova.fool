@@ -1,5 +1,17 @@
-print (
-    if (6 / 6 == 2 && 5 == 5)
-        then { true }
-        else { false }
-);
+let
+  /* 1. Dichiarazione della Classe */
+  class Cane (eta:int) {
+    /* Metodo che restituisce true se il cane è cucciolo (< 2 anni) */
+    fun isCucciolo:bool ()
+      eta <= 2;
+  }
+
+  /* 2. Creazione dell'oggetto (Istanziazione) */
+  var fido:Cane = new Cane(4);
+in
+  /* 3. Utilizzo dell'oggetto nel corpo principale */
+  print (
+    if fido.isCucciolo()
+    then { 1 }   /* Stampa 1 se è cucciolo */
+    else { 0 }   /* Stampa 0 se è adulto */
+  );

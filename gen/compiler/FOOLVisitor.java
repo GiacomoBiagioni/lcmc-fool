@@ -1,4 +1,4 @@
-// Generated from C:/Users/biagi/Desktop/Uni/Magistrale/LCML/lcmc-fool/compiler/FOOL.g4 by ANTLR 4.13.2
+// Generated from C:/Users/user/Desktop/LCMC/ProgettoLCMC/lcmc-fool/compiler/FOOL.g4 by ANTLR 4.13.2
 package compiler;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -31,6 +31,18 @@ public interface FOOLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNoDecProg(FOOLParser.NoDecProgContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FOOLParser#cldec}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCldec(FOOLParser.CldecContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FOOLParser#methdec}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMethdec(FOOLParser.MethdecContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code vardec}
 	 * labeled alternative in {@link FOOLParser#dec}.
 	 * @param ctx the parse tree
@@ -44,6 +56,13 @@ public interface FOOLVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFundec(FOOLParser.FundecContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code new}
+	 * labeled alternative in {@link FOOLParser#exp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNew(FOOLParser.NewContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code comp}
 	 * labeled alternative in {@link FOOLParser#exp}.
@@ -115,6 +134,13 @@ public interface FOOLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrint(FOOLParser.PrintContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code null}
+	 * labeled alternative in {@link FOOLParser#exp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNull(FOOLParser.NullContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code true}
 	 * labeled alternative in {@link FOOLParser#exp}.
 	 * @param ctx the parse tree
@@ -128,6 +154,13 @@ public interface FOOLVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitId(FOOLParser.IdContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code dotCall}
+	 * labeled alternative in {@link FOOLParser#exp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDotCall(FOOLParser.DotCallContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code if}
 	 * labeled alternative in {@link FOOLParser#exp}.

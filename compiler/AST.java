@@ -17,6 +17,154 @@ public class AST {
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
 
+	// Nodo per la dichiarazione di una Classe
+	public static class ClassNode extends DecNode {
+		final String id;
+		//final String superId; // ID della superclasse (o null se non c'è extends)
+		final List<FieldNode> fields;
+		final List<MethodNode> methods;
+
+		public STentry entry;
+
+		// Costruttore
+		ClassNode(String i, List<FieldNode> f, List<MethodNode> m) {
+			id = i;
+			//superId = si;
+			fields = Collections.unmodifiableList(f);
+			methods = Collections.unmodifiableList(m);
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per la dichiarazione di un Metodo (simile a FunNode)
+	public static class MethodNode extends DecNode {
+		final String id;
+		final TypeNode retType;
+		final List<ParNode> parlist;
+		final List<DecNode> declist;
+		final Node exp;
+		String label; // Etichetta per la generazione codice (aggiunta futura)
+		int offset;   // Offset nella Virtual Table
+
+		MethodNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {
+			id=i;
+			retType=rt;
+			parlist=Collections.unmodifiableList(pl);
+			declist=Collections.unmodifiableList(dl);
+			exp=e;
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per un Campo (Field) - Simile a ParNode
+	public static class FieldNode extends DecNode {
+		final String id;
+
+		FieldNode(String i, TypeNode t) {
+			id = i;
+			type = t;
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per l'istanziazione (NEW)
+	public static class NewNode extends Node {
+		final String id; // Nome della classe da istanziare
+		final List<Node> arglist;
+		STentry entry; // Riferimento alla classe nella Symbol Table
+
+		NewNode(String i, List<Node> a) {
+			id = i;
+			arglist = Collections.unmodifiableList(a);
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per la chiamata di metodo (obj.metodo(...))
+	public static class ClassCallNode extends Node {
+		final String objId;   // Nome dell'oggetto
+		final String methodId; // Nome del metodo
+		final List<Node> arglist;
+		STentry entry;      // Entry dell'oggetto
+		STentry methodEntry;// Entry del metodo (nella VTable)
+		int nl; // Nesting Level
+
+		ClassCallNode(String oi, String mi, List<Node> a) {
+			objId = oi;
+			methodId = mi;
+			arglist = Collections.unmodifiableList(a);
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per il tipo "Riferimento a Classe"
+	public static class RefTypeNode extends TypeNode {
+		final String id; // Nome della classe referenziata
+
+		RefTypeNode(String i) {
+			id = i;
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Nodo per 'null'
+	public static class EmptyNode extends Node {
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Rappresenta il tipo "NULL"
+	public static class EmptyTypeNode extends TypeNode {
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	// Rappresenta la struttura di tipo di una Classe (nella Symbol Table)
+	public static class ClassTypeNode extends TypeNode {
+		// Lista dei tipi di tutti i campi (propri + ereditati)
+		final ArrayList<TypeNode> allFields;
+		// Lista dei tipi funzionali di tutti i metodi (propri + ereditati)
+		final ArrayList<ArrowTypeNode> allMethods;
+
+		public ClassTypeNode(ArrayList<TypeNode> f, ArrayList<ArrowTypeNode> m) {
+			allFields = f;
+			allMethods = m;
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
 	public static class ProgNode extends Node {
 		final Node exp;
 		ProgNode(Node e) {exp = e;}

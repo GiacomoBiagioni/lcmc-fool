@@ -23,11 +23,12 @@ public class Test {
 
     	System.out.println("Generating ST via lexer and parser.");
     	ParseTree st = parser.prog();
+		System.out.println("ST: "+st.toStringTree(parser));
     	System.out.println("You had "+lexer.lexicalErrors+" lexical errors and "+
     		parser.getNumberOfSyntaxErrors()+" syntax errors.\n");
 
     	System.out.println("Generating AST.");
-    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(); // use true to visualize the ST
+    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(true); // use true to visualize the ST
     	Node ast = visitor.visit(st);
     	System.out.println("");
 

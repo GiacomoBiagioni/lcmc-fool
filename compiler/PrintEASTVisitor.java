@@ -189,12 +189,82 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 		printNode(n);
 		return null;
 	}
-	
+
+	// --- NUOVI METODI PER OBJECT ORIENTATION ---
+
+	@Override
+	public Void visitNode(ClassNode n) {
+		printNode(n, n.id);
+		for (Node field : n.fields) visit(field);
+		for (Node method : n.methods) visit(method);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(FieldNode n) {
+		printNode(n, n.id);
+		visit(n.getType());
+		return null;
+	}
+
+	@Override
+	public Void visitNode(MethodNode n) {
+		printNode(n, n.id);
+		visit(n.retType);
+		for (ParNode par : n.parlist) visit(par);
+		for (Node dec : n.declist) visit(dec);
+		visit(n.exp);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(NewNode n) {
+		printNode(n, n.id);
+		visit(n.entry); // Mostra la STentry della classe istanziata
+		for (Node arg : n.arglist) visit(arg);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(EmptyNode n) {
+		printNode(n);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(ClassCallNode n) {
+		printNode(n, n.objId + "." + n.methodId + " at nestinglevel " + n.nl);
+		visit(n.entry);       // STentry dell'oggetto
+		visit(n.methodEntry); // STentry del metodo risolto (nella VTable)
+		for (Node arg : n.arglist) visit(arg);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(RefTypeNode n) {
+		printNode(n, n.id);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(ClassTypeNode n) {
+		printNode(n);
+		for (TypeNode field : n.allFields) visit(field);
+		for (ArrowTypeNode method : n.allMethods) visit(method);
+		return null;
+	}
+
+	@Override
+	public Void visitNode(EmptyTypeNode n) {
+		printNode(n);
+		return null;
+	}
+
 	@Override
 	public Void visitSTentry(STentry entry) {
 		printSTentry("nestlev "+entry.nl);
 		printSTentry("type");
-		visit(entry.type);
+		visit(entry.type); // Se type è ClassTypeNode, chiama il visitNode aggiunto sopra
 		printSTentry("offset "+entry.offset);
 		return null;
 	}
